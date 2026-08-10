@@ -5,4 +5,7 @@ export const CATEGORIAS: Array<string> = [
   "Lácteos",
   "Panadería",
   "Limpieza",
+  "Carnes",
+  "Frutas y Vegetales",
+  "Otros",
 ]

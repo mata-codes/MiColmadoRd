@@ -1,10 +1,10 @@
 import type { Producto } from "@/producto"
 import { CATEGORIAS } from "@/categoria"
 export const PRODUCTOS: Producto[] = [
-  { id: 1, nombre: "Coca Cola 355ml", precio: 35, categoria: CATEGORIAS[1] },
-  { id: 2, nombre: "Agua 500ml", precio: 20, categoria: CATEGORIAS[1] },
-  { id: 3, nombre: "Jugo de Naranja", precio: 45, categoria: CATEGORIAS[1] },
-  { id: 4, nombre: "Cerveza Presidente", precio: 55, categoria: CATEGORIAS[1] },
+  { id: 1, nombre: "Coca Cola 355 ml", precio: 35, categoria: CATEGORIAS[1] },
+  { id: 2, nombre: "Agua 500 ml", precio: 20, categoria: CATEGORIAS[1] },
+  { id: 3, nombre: "Jugo de Naranja 20 onzas", precio: 45, categoria: CATEGORIAS[1] },
+  { id: 4, nombre: "Cerveza Presidente pequeña", precio: 55, categoria: CATEGORIAS[1] },
   { id: 5, nombre: "Pan de Molde", precio: 60, categoria: CATEGORIAS[4] },
   { id: 6, nombre: "Pan Sobao", precio: 25, categoria: CATEGORIAS[4] },
   { id: 7, nombre: "Bizcocho", precio: 40, categoria: CATEGORIAS[4] },
@@ -17,4 +17,15 @@ export const PRODUCTOS: Producto[] = [
   { id: 14, nombre: "Cloro 1gal", precio: 65, categoria: CATEGORIAS[5] },
   { id: 15, nombre: "Detergente 500g", precio: 45, categoria: CATEGORIAS[5] },
   { id: 16, nombre: "Jabón Líquido", precio: 55, categoria: CATEGORIAS[5] },
+  { id: 17, nombre: "Lomo de Cerdo", precio: 120, categoria: CATEGORIAS[7] },
+  { id: 18, nombre: "Pechuga de Pollo", precio: 85, categoria: CATEGORIAS[7] },
+  { id: 19, nombre: "Carne Molida de Res", precio: 95, categoria: CATEGORIAS[7] },
+  { id: 20, nombre: "Chuletas de Cordero", precio: 150, categoria: CATEGORIAS[7] },
+  { id: 21, nombre: "Milanesa de Ternera", precio: 130, categoria: CATEGORIAS[7] },
+  { id: 22, nombre: "Alitas de Pollo", precio: 70, categoria: CATEGORIAS[7] },
+  { id: 23, nombre: "Costillas de Cerdo", precio: 110, categoria: CATEGORIAS[7] },
+  { id: 24, nombre: "Pulpa de Res", precio: 140, categoria: CATEGORIAS[7] },
+  { id: 25, nombre: "Chorizo Criollo", precio: 80, categoria: CATEGORIAS[7] },
+  { id: 26, nombre: "Morcilla", precio: 60, categoria: CATEGORIAS[7] },
+  
 ]
