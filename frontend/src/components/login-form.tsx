@@ -36,7 +36,7 @@ export function LoginForm({
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="email">Correo Electronico</FieldLabel>
+                <FieldLabel htmlFor="email">Correo , usuario</FieldLabel>
                 <Input
                   id="email"
                   type="email"
