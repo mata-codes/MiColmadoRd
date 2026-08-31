@@ -1,0 +1,42 @@
+import type { SaleProduct } from "../types/sale-product"
+
+export const SALE_CATEGORIES = [
+  "Todas",
+  "Bebidas",
+  "Comidas",
+  "Lacteos",
+  "Panaderia",
+  "Limpieza",
+  "Carnes",
+  "Frutas y Vegetales",
+  "Otros",
+]
+
+export const SALE_PRODUCTS: SaleProduct[] = [
+  { id: 1, name: "Coca Cola 355 ml", price: 35, category: "Bebidas" },
+  { id: 2, name: "Agua 500 ml", price: 20, category: "Bebidas" },
+  { id: 3, name: "Jugo de Naranja 20 onzas", price: 45, category: "Bebidas" },
+  { id: 4, name: "Cerveza Presidente pequena", price: 55, category: "Bebidas" },
+  { id: 5, name: "Pan de Molde", price: 60, category: "Panaderia" },
+  { id: 6, name: "Pan Sobao", price: 25, category: "Panaderia" },
+  { id: 7, name: "Bizcocho", price: 40, category: "Panaderia" },
+  { id: 8, name: "Leche Entera 1L", price: 55, category: "Lacteos" },
+  { id: 9, name: "Queso Blanco", price: 80, category: "Lacteos" },
+  { id: 10, name: "Yogurt Natural", price: 50, category: "Lacteos" },
+  { id: 11, name: "Arroz 1lb", price: 30, category: "Comidas" },
+  { id: 12, name: "Frijoles 1lb", price: 35, category: "Comidas" },
+  { id: 13, name: "Aceite 16oz", price: 90, category: "Comidas" },
+  { id: 14, name: "Cloro 1gal", price: 65, category: "Limpieza" },
+  { id: 15, name: "Detergente 500g", price: 45, category: "Limpieza" },
+  { id: 16, name: "Jabon Liquido", price: 55, category: "Limpieza" },
+  { id: 17, name: "Lomo de Cerdo", price: 120, category: "Carnes" },
+  { id: 18, name: "Pechuga de Pollo", price: 85, category: "Carnes" },
+  { id: 19, name: "Carne Molida de Res", price: 95, category: "Carnes" },
+  { id: 20, name: "Chuletas de Cordero", price: 150, category: "Carnes" },
+  { id: 21, name: "Milanesa de Ternera", price: 130, category: "Carnes" },
+  { id: 22, name: "Alitas de Pollo", price: 70, category: "Carnes" },
+  { id: 23, name: "Costillas de Cerdo", price: 110, category: "Carnes" },
+  { id: 24, name: "Pulpa de Res", price: 140, category: "Carnes" },
+  { id: 25, name: "Chorizo Criollo", price: 80, category: "Carnes" },
+  { id: 26, name: "Morcilla", price: 60, category: "Carnes" },
+]

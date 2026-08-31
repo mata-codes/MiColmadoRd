@@ -16,10 +16,12 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import type { ItemCarrito } from "@/itemCarrito"
-import { CATEGORIAS } from "@/categoria"
-import { PRODUCTOS } from "@/mockdata"
-import type { Producto } from "@/producto"
+import {
+  SALE_CATEGORIES,
+  SALE_PRODUCTS,
+  type SaleCartItem,
+  type SaleProduct,
+} from "@/features/sales"
 import { cn } from "@/lib/utils"
 import {
   Banknote,
@@ -90,34 +92,34 @@ const VENTAS_INICIALES: Venta[] = [
 export default function SalesDashboard() {
   const [categoriaActiva, setCategoriaActiva] = useState("Todas")
   const [busqueda, setBusqueda] = useState("")
-  const [carrito, setCarrito] = useState<ItemCarrito[]>([])
+  const [carrito, setCarrito] = useState<SaleCartItem[]>([])
   const [ventas, setVentas] = useState<Venta[]>(VENTAS_INICIALES)
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("Efectivo")
   const [cliente, setCliente] = useState("Mostrador")
 
-  const productosFiltrados = PRODUCTOS.filter((producto) => {
+  const productosFiltrados = SALE_PRODUCTS.filter((producto) => {
     const coincideCategoria =
-      categoriaActiva === "Todas" || producto.categoria === categoriaActiva
-    const coincideBusqueda = producto.nombre
+      categoriaActiva === "Todas" || producto.category === categoriaActiva
+    const coincideBusqueda = producto.name
       .toLowerCase()
       .includes(busqueda.toLowerCase())
 
     return coincideCategoria && coincideBusqueda
   })
 
-  const agregarAlCarrito = (producto: Producto) => {
+  const agregarAlCarrito = (producto: SaleProduct) => {
     setCarrito((prev) => {
       const existente = prev.find((item) => item.id === producto.id)
 
       if (existente) {
         return prev.map((item) =>
           item.id === producto.id
-            ? { ...item, cantidad: item.cantidad + 1 }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       }
 
-      return [...prev, { ...producto, cantidad: 1 }]
+      return [...prev, { ...producto, quantity: 1 }]
     })
   }
 
@@ -125,9 +127,9 @@ export default function SalesDashboard() {
     setCarrito((prev) => {
       const existente = prev.find((item) => item.id === id)
 
-      if (existente && existente.cantidad > 1) {
+      if (existente && existente.quantity > 1) {
         return prev.map((item) =>
-          item.id === id ? { ...item, cantidad: item.cantidad - 1 } : item
+          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
         )
       }
 
@@ -136,10 +138,10 @@ export default function SalesDashboard() {
   }
 
   const total = carrito.reduce(
-    (sum, item) => sum + item.precio * item.cantidad,
+    (sum, item) => sum + item.price * item.quantity,
     0
   )
-  const articulos = carrito.reduce((sum, item) => sum + item.cantidad, 0)
+  const articulos = carrito.reduce((sum, item) => sum + item.quantity, 0)
   const ventasCompletadas = ventas.filter(
     (venta) => venta.estado === "Pagada" || venta.estado === "Entregada"
   )
@@ -153,7 +155,7 @@ export default function SalesDashboard() {
 
   const productoMasVendido = useMemo(() => {
     const conteo = carrito.reduce<Record<string, number>>((acc, item) => {
-      acc[item.nombre] = (acc[item.nombre] ?? 0) + item.cantidad
+      acc[item.name] = (acc[item.name] ?? 0) + item.quantity
       return acc
     }, {})
 
@@ -265,7 +267,7 @@ export default function SalesDashboard() {
                   </div>
 
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {CATEGORIAS.map((categoria) => (
+                    {SALE_CATEGORIES.map((categoria) => (
                       <Button
                         key={categoria}
                         variant={
@@ -291,15 +293,15 @@ export default function SalesDashboard() {
                             <Package className="size-4" />
                           </div>
                           <Badge variant="secondary">
-                            RD$ {producto.precio.toFixed(2)}
+                            RD$ {producto.price.toFixed(2)}
                           </Badge>
                         </div>
                         <div>
                           <p className="line-clamp-2 text-sm font-medium">
-                            {producto.nombre}
+                            {producto.name}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {producto.categoria}
+                            {producto.category}
                           </p>
                         </div>
                       </button>
@@ -376,14 +378,14 @@ export default function SalesDashboard() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium">
-                              {item.nombre}
+                              {item.name}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              RD$ {item.precio.toFixed(2)} x {item.cantidad}
+                              RD$ {item.price.toFixed(2)} x {item.quantity}
                             </p>
                           </div>
                           <p className="text-sm font-bold">
-                            RD$ {(item.precio * item.cantidad).toFixed(2)}
+                            RD$ {(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                         <div className="mt-3 flex items-center justify-end gap-2">
@@ -395,7 +397,7 @@ export default function SalesDashboard() {
                             <Minus />
                           </Button>
                           <span className="w-6 text-center text-sm font-medium">
-                            {item.cantidad}
+                            {item.quantity}
                           </span>
                           <Button
                             variant="outline"

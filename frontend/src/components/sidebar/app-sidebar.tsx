@@ -17,6 +17,7 @@ import { NavMain } from "@/components/sidebar/nav-main"
 import { NavProjects } from "@/components/sidebar/nav-projects"
 import { NavSecondary } from "@/components/sidebar/nav-secondary"
 import { NavUser } from "@/components/sidebar/nav-user"
+import { APP_CONFIG } from "@/config/app"
 import {
   Sidebar,
   SidebarContent,
@@ -30,7 +31,7 @@ import {
 const data = {
   user: {
     name: "Santana",
-    email: "2022-0835@colrd.com",
+    email: "santana@syntar.app",
     avatar:
       "https://imgs.search.brave.com/pD-lVXc9jsIF0EZ0LmN1wj1h45RnQ-5g-CYYtkoLNIw/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/OTUxLzEzNy9zbWFs/bC9zdHlsaXNoLXNw/ZWN0YWNsZXMtZ3V5/LTNkLWF2YXRhci1j/aGFyYWN0ZXItaWxs/dXN0cmF0aW9ucy1w/bmcucG5n",
   },
@@ -120,10 +121,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Mi Colmado RD</span>
-                  <span className="truncate text-xs">
-                    Tu Colmado En Tus Manos
+                  <span className="truncate font-medium">
+                    {APP_CONFIG.name}
                   </span>
+                  <span className="truncate text-xs">{APP_CONFIG.tagline}</span>
                 </div>
               </a>
             </SidebarMenuButton>

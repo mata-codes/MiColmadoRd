@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils"
+import type { ComponentProps, FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -10,62 +11,57 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { APP_CONFIG } from "@/config/app"
+import { cn } from "@/lib/utils"
 
-export function SignupForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+export function LoginForm({ className, ...props }: ComponentProps<"div">) {
   const navigate = useNavigate()
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    navigate("/login")
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    navigate("/sale")
   }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+          <form className="p-6 md:p-8" onSubmit={handleSubmit}>
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <img src="/logo.png" alt="public/" className="h-14 w-14" />
-                <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
-                <p className="text-sm text-balance text-muted-foreground">
-                  Introduce tu correo a continuación para crear tu cuenta.
+                <img
+                  src="/logo.png"
+                  alt={APP_CONFIG.name}
+                  className="h-14 w-14"
+                />
+                <h1 className="text-2xl font-bold">{APP_CONFIG.name}</h1>
+                <p className="text-balance text-muted-foreground">
+                  Inicia sesion en tu cuenta de {APP_CONFIG.name}
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="email">Correo Electronico</FieldLabel>
+                <FieldLabel htmlFor="email">Correo electronico</FieldLabel>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="2022-0835@colrd.com"
+                  placeholder="usuario@syntar.app"
                   required
                 />
-                <FieldDescription>
-                  Usaremos esto para ponernos en contacto contigo. No
-                  compartiremos tu correo electrónico con nadie más.
-                </FieldDescription>
               </Field>
               <Field>
-                <Field className="grid grid-cols-2 gap-4">
-                  <Field>
-                    <FieldLabel htmlFor="password">Contraseña</FieldLabel>
-                    <Input id="password" type="password" required />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="confirm-password">
-                      Confirmar Contraseña
-                    </FieldLabel>
-                    <Input id="confirm-password" type="password" required />
-                  </Field>
-                </Field>
-                <FieldDescription>
-                  Debe tener al menos 8 caracteres.
-                </FieldDescription>
+                <div className="flex items-center">
+                  <FieldLabel htmlFor="password">Contrasena</FieldLabel>
+                  <a
+                    href="#"
+                    className="ml-auto text-sm underline-offset-2 hover:underline"
+                  >
+                    Olvidaste tu contrasena?
+                  </a>
+                </div>
+                <Input id="password" type="password" required />
               </Field>
               <Field>
-                <Button type="submit">Crear una cuenta</Button>
+                <Button type="submit">Iniciar sesion</Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 O continuar con
@@ -78,7 +74,7 @@ export function SignupForm({
                       fill="currentColor"
                     />
                   </svg>
-                  <span className="sr-only">Regístrate con Apple.</span>
+                  <span className="sr-only">Iniciar sesion con Apple</span>
                 </Button>
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -87,7 +83,7 @@ export function SignupForm({
                       fill="currentColor"
                     />
                   </svg>
-                  <span className="sr-only">Regístrate con Google</span>
+                  <span className="sr-only">Iniciar sesion con Google</span>
                 </Button>
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -96,27 +92,27 @@ export function SignupForm({
                       fill="currentColor"
                     />
                   </svg>
-                  <span className="sr-only">Regístrate con Meta</span>
+                  <span className="sr-only">Iniciar sesion con Meta</span>
                 </Button>
               </Field>
               <FieldDescription className="text-center">
-                ¿Ya tienes una cuenta? <a href="/login">Iniciar sesión</a>
+                No tienes una cuenta? <a href="/register">Registrate</a>
               </FieldDescription>
             </FieldGroup>
           </form>
           <div className="relative hidden bg-muted md:block">
             <img
-              src="/register.jpg"
-              alt="public/"
-              className="absolute inset-0 h-full w-full"
+              src="/placeholder.jpg"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        Al hacer clic en continuar, acepta nuestros{" "}
-        <a href="#">Términos de servicio</a> y nuestra{" "}
-        <a href="#">Política de privacidad</a>.
+        Al hacer clic en continuar, aceptas nuestros{" "}
+        <a href="#">Terminos de servicio</a> y nuestra{" "}
+        <a href="#">Politica de privacidad</a>.
       </FieldDescription>
     </div>
   )
