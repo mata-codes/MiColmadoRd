@@ -1,14 +1,14 @@
-# MiColmadoRd
+# Syntar
 
-Tu Colmado en tus manos!
+Gestion simple para ventas e inventario.
 
-Sistema de gestión para colmados dominicanos. Aplicación web para administrar ventas, inventario y operaciones diarias.
+Aplicacion web para administrar ventas, inventario y operaciones diarias.
 
 ## Estructura del proyecto
 
 ```
-MiColmadoRd/
-├── frontend/          # Aplicación web (React + TypeScript + Vite)
+Syntar/
+├── frontend/          # Aplicacion web (React + TypeScript + Vite)
 └── README.md
 ```
 
@@ -18,12 +18,13 @@ Construido con **React**, **TypeScript**, **Vite**, **shadcn/ui** y **Tailwind C
 
 ### Páginas
 
-| Ruta       | Descripción                  |
+| Ruta       | Descripcion                  |
 |------------|------------------------------|
-| `/login`   | Inicio de sesión             |
+| `/login`   | Inicio de sesion             |
 | `/register` | Registro de usuario          |
 | `/sale`    | Punto de venta (POS)         |
-| `/shop`    | Panel de administración      |
+| `/shop`    | Tienda                       |
+| `/pro`     | Planes                       |
 
 ### Scripts disponibles
 
@@ -32,7 +33,7 @@ cd frontend
 pnpm run dev      # Iniciar servidor de desarrollo
 pnpm run build    # Compilar para producción
 pnpm run lint     # Ejecutar linter
-pnpm run format   # Formatear código con Prettier
+pnpm run format   # Formatear codigo con Prettier
 pnpm run typecheck # Verificar tipos
 ```
 
