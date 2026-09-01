@@ -1,4 +1,14 @@
-import { useMemo, useState, type ComponentType } from "react"
+import { useMemo, useState } from "react"
+import {
+  CalendarDays,
+  Clock,
+  ReceiptText,
+  Search,
+  ShoppingCart,
+  TrendingUp,
+  WalletCards,
+} from "lucide-react"
+
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -7,8 +17,6 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
 } from "@/components/ui/breadcrumb"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -17,40 +25,25 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import {
-  SALE_CATEGORIES,
+  AdminMobileTabs,
   SALE_PRODUCTS,
+  SaleCheckoutPanel,
+  SaleDetailSheet,
+  SaleProductsPanel,
+  SalesHistoryPanel,
+  SalesMetricCard,
+  type AdminView,
+  type PaymentMethod,
+  type Sale,
   type SaleCartItem,
   type SaleProduct,
 } from "@/features/sales"
+import { getCategoryOptions, normalizeCatalogText } from "@/lib/catalog"
 import { cn } from "@/lib/utils"
-import {
-  Banknote,
-  CheckCircle2,
-  Clock,
-  CreditCard,
-  Minus,
-  Package,
-  Plus,
-  ReceiptText,
-  Search,
-  ShoppingCart,
-  TrendingUp,
-} from "lucide-react"
 
-type EstadoVenta = "Pagada" | "Pendiente" | "Preparando" | "Entregada"
-type MetodoPago = "Efectivo" | "Tarjeta" | "Transferencia"
+const ALL_SALE_CATEGORIES_LABEL = "Todas"
 
-type Venta = {
-  id: string
-  cliente: string
-  estado: EstadoVenta
-  metodo: MetodoPago
-  total: number
-  articulos: number
-  hora: string
-}
-
-const VENTAS_INICIALES: Venta[] = [
+const INITIAL_SALES: Sale[] = [
   {
     id: "V-1004",
     cliente: "Mostrador",
@@ -90,44 +83,82 @@ const VENTAS_INICIALES: Venta[] = [
 ]
 
 export default function SalesDashboard() {
-  const [categoriaActiva, setCategoriaActiva] = useState("Todas")
-  const [busqueda, setBusqueda] = useState("")
-  const [carrito, setCarrito] = useState<SaleCartItem[]>([])
-  const [ventas, setVentas] = useState<Venta[]>(VENTAS_INICIALES)
-  const [metodoPago, setMetodoPago] = useState<MetodoPago>("Efectivo")
-  const [cliente, setCliente] = useState("Mostrador")
+  const [activeCategory, setActiveCategory] = useState(
+    ALL_SALE_CATEGORIES_LABEL
+  )
+  const [search, setSearch] = useState("")
+  const [cart, setCart] = useState<SaleCartItem[]>([])
+  const [sales, setSales] = useState<Sale[]>(INITIAL_SALES)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Efectivo")
+  const [customer, setCustomer] = useState("Mostrador")
+  const [adminView, setAdminView] = useState<AdminView>("dashboard")
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
 
-  const productosFiltrados = SALE_PRODUCTS.filter((producto) => {
-    const coincideCategoria =
-      categoriaActiva === "Todas" || producto.category === categoriaActiva
-    const coincideBusqueda = producto.name
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
+  const categories = useMemo(
+    () => [
+      ALL_SALE_CATEGORIES_LABEL,
+      ...getCategoryOptions(SALE_PRODUCTS).slice(1),
+    ],
+    []
+  )
 
-    return coincideCategoria && coincideBusqueda
-  })
+  const filteredProducts = useMemo(() => {
+    return SALE_PRODUCTS.filter((product) => {
+      const matchesCategory =
+        activeCategory === ALL_SALE_CATEGORIES_LABEL ||
+        normalizeCatalogText(product.category) ===
+          normalizeCatalogText(activeCategory)
+      const matchesSearch = normalizeCatalogText(product.name).includes(
+        normalizeCatalogText(search)
+      )
 
-  const agregarAlCarrito = (producto: SaleProduct) => {
-    setCarrito((prev) => {
-      const existente = prev.find((item) => item.id === producto.id)
+      return matchesCategory && matchesSearch
+    })
+  }, [activeCategory, search])
 
-      if (existente) {
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const completedSales = sales.filter(
+    (sale) => sale.estado === "Pagada" || sale.estado === "Entregada"
+  )
+  const revenue = completedSales.reduce((sum, sale) => sum + sale.total, 0)
+  const inProgress = sales.filter(
+    (sale) => sale.estado === "Pendiente" || sale.estado === "Preparando"
+  ).length
+  const averageTicket = sales.length ? revenue / sales.length : 0
+
+  const productHint = useMemo(() => {
+    const count = cart.reduce<Record<string, number>>((acc, item) => {
+      acc[item.name] = (acc[item.name] ?? 0) + item.quantity
+      return acc
+    }, {})
+
+    const product = Object.entries(count).sort((a, b) => b[1] - a[1])[0]
+    return product?.[0] ?? "Sin productos"
+  }, [cart])
+
+  const addToCart = (product: SaleProduct) => {
+    setAdminView("cobro")
+    setCart((prev) => {
+      const current = prev.find((item) => item.id === product.id)
+
+      if (current) {
         return prev.map((item) =>
-          item.id === producto.id
+          item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       }
 
-      return [...prev, { ...producto, quantity: 1 }]
+      return [...prev, { ...product, quantity: 1 }]
     })
   }
 
-  const quitarDelCarrito = (id: number) => {
-    setCarrito((prev) => {
-      const existente = prev.find((item) => item.id === id)
+  const removeOne = (id: number) => {
+    setCart((prev) => {
+      const current = prev.find((item) => item.id === id)
 
-      if (existente && existente.quantity > 1) {
+      if (current && current.quantity > 1) {
         return prev.map((item) =>
           item.id === id ? { ...item, quantity: item.quantity - 1 } : item
         )
@@ -137,74 +168,44 @@ export default function SalesDashboard() {
     })
   }
 
-  const total = carrito.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  )
-  const articulos = carrito.reduce((sum, item) => sum + item.quantity, 0)
-  const ventasCompletadas = ventas.filter(
-    (venta) => venta.estado === "Pagada" || venta.estado === "Entregada"
-  )
-  const ingresos = ventasCompletadas.reduce(
-    (sum, venta) => sum + venta.total,
-    0
-  )
-  const enProceso = ventas.filter(
-    (venta) => venta.estado === "Pendiente" || venta.estado === "Preparando"
-  ).length
+  const registerSale = () => {
+    if (cart.length === 0) return
 
-  const productoMasVendido = useMemo(() => {
-    const conteo = carrito.reduce<Record<string, number>>((acc, item) => {
-      acc[item.name] = (acc[item.name] ?? 0) + item.quantity
-      return acc
-    }, {})
-
-    const producto = Object.entries(conteo).sort((a, b) => b[1] - a[1])[0]
-    return producto?.[0] ?? "Sin productos"
-  }, [carrito])
-
-  const registrarVenta = () => {
-    if (carrito.length === 0) return
-
-    const nuevaVenta: Venta = {
-      id: `V-${1001 + ventas.length}`,
-      cliente: cliente.trim() || "Mostrador",
-      estado: metodoPago === "Efectivo" ? "Pagada" : "Preparando",
-      metodo: metodoPago,
+    const newSale: Sale = {
+      id: `V-${1001 + sales.length}`,
+      cliente: customer.trim() || "Mostrador",
+      estado: paymentMethod === "Efectivo" ? "Pagada" : "Preparando",
+      metodo: paymentMethod,
       total,
-      articulos,
+      articulos: itemCount,
       hora: new Date().toLocaleTimeString("es-DO", {
         hour: "2-digit",
         minute: "2-digit",
       }),
     }
 
-    setVentas((prev) => [nuevaVenta, ...prev])
-    setCarrito([])
-    setCliente("Mostrador")
-  }
-
-  const variantEstado = (estado: EstadoVenta) => {
-    if (estado === "Pagada" || estado === "Entregada") return "default"
-    if (estado === "Preparando") return "secondary"
-    return "outline"
+    setSales((prev) => [newSale, ...prev])
+    setCart([])
+    setCustomer("Mostrador")
+    setSelectedSale(newSale)
+    setAdminView("ventas")
   }
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-20 flex min-h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur">
+        <header className="sticky top-0 z-20 flex min-h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-3 backdrop-blur sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger className="-ml-1" aria-label="Abrir menu" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="mr-2 hidden data-[orientation=vertical]:h-4 sm:block"
             />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Ventas</BreadcrumbLink>
+                  <BreadcrumbLink href="#">Ventas privadas</BreadcrumbLink>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -213,286 +214,138 @@ export default function SalesDashboard() {
           <div className="relative hidden w-full max-w-sm md:block">
             <Search className="absolute top-2 left-2 size-4 text-muted-foreground" />
             <Input
+              aria-label="Buscar productos para registrar una venta"
               placeholder="Buscar producto..."
-              value={busqueda}
-              onChange={(event) => setBusqueda(event.target.value)}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
               className="pl-8"
             />
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-auto p-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <ResumenCard
-              titulo="Ventas de hoy"
-              valor={ventas.length.toString()}
-              detalle="Ordenes registradas"
-              icono={ReceiptText}
+        <div className="flex min-h-0 flex-1 flex-col overflow-auto p-3 pb-24 sm:p-4 xl:pb-4">
+          <section
+            className={cn(
+              "mb-4 grid gap-3 xl:grid xl:grid-cols-[1fr_280px]",
+              adminView !== "dashboard" && "hidden xl:grid"
+            )}
+          >
+            <div>
+              <Badge variant="secondary" className="mb-3">
+                <CalendarDays />
+                Operación de hoy
+              </Badge>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Dashboard de ventas
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Registra cobros, revisa órdenes y mantén visible el flujo del
+                mostrador desde el móvil.
+              </p>
+            </div>
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <WalletCards className="size-4 text-muted-foreground" />
+                Corte parcial
+              </div>
+              <p className="mt-3 text-2xl font-bold">
+                RD$ {revenue.toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Ticket promedio RD$ {averageTicket.toFixed(2)}
+              </p>
+            </div>
+          </section>
+
+          <div
+            className={cn(
+              "grid gap-3 sm:grid-cols-2 xl:grid xl:grid-cols-4",
+              adminView !== "dashboard" && "hidden xl:grid"
+            )}
+          >
+            <SalesMetricCard
+              title="Ventas de hoy"
+              value={sales.length.toString()}
+              detail="Órdenes registradas"
+              icon={ReceiptText}
             />
-            <ResumenCard
-              titulo="Ingresos"
-              valor={`RD$ ${ingresos.toFixed(2)}`}
-              detalle="Pagadas y entregadas"
-              icono={TrendingUp}
+            <SalesMetricCard
+              title="Ingresos"
+              value={`RD$ ${revenue.toFixed(2)}`}
+              detail="Pagadas y entregadas"
+              icon={TrendingUp}
             />
-            <ResumenCard
-              titulo="En proceso"
-              valor={enProceso.toString()}
-              detalle="Pendientes o preparando"
-              icono={Clock}
+            <SalesMetricCard
+              title="En proceso"
+              value={inProgress.toString()}
+              detail="Pendientes o preparando"
+              icon={Clock}
             />
-            <ResumenCard
-              titulo="Venta actual"
-              valor={`RD$ ${total.toFixed(2)}`}
-              detalle={`${articulos} articulos en carrito`}
-              icono={ShoppingCart}
+            <SalesMetricCard
+              title="Venta actual"
+              value={`RD$ ${total.toFixed(2)}`}
+              detail={`${itemCount} artículos en carrito`}
+              icon={ShoppingCart}
             />
           </div>
 
           <div className="mt-4 grid min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Registrar venta</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="relative md:hidden">
-                    <Search className="absolute top-2 left-2 size-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar producto..."
-                      value={busqueda}
-                      onChange={(event) => setBusqueda(event.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
+            <div className="order-2 space-y-4 xl:order-1">
+              <div
+                className={cn(adminView !== "productos" && "hidden xl:block")}
+              >
+                <SaleProductsPanel
+                  categories={categories}
+                  activeCategory={activeCategory}
+                  search={search}
+                  products={filteredProducts}
+                  onCategoryChange={setActiveCategory}
+                  onSearchChange={setSearch}
+                  onAdd={addToCart}
+                />
+              </div>
 
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {SALE_CATEGORIES.map((categoria) => (
-                      <Button
-                        key={categoria}
-                        variant={
-                          categoriaActiva === categoria ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() => setCategoriaActiva(categoria)}
-                      >
-                        {categoria}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                    {productosFiltrados.map((producto) => (
-                      <button
-                        key={producto.id}
-                        onClick={() => agregarAlCarrito(producto)}
-                        className="flex min-h-32 flex-col justify-between rounded-lg border bg-background p-3 text-left transition-all hover:border-primary hover:shadow-sm active:scale-95"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex size-9 items-center justify-center rounded-md bg-muted">
-                            <Package className="size-4" />
-                          </div>
-                          <Badge variant="secondary">
-                            RD$ {producto.price.toFixed(2)}
-                          </Badge>
-                        </div>
-                        <div>
-                          <p className="line-clamp-2 text-sm font-medium">
-                            {producto.name}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {producto.category}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Seguimiento de ventas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {ventas.map((venta) => (
-                      <div
-                        key={venta.id}
-                        className="grid gap-3 rounded-lg border bg-background p-3 md:grid-cols-[120px_1fr_120px_120px_120px]"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold">{venta.id}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {venta.hora}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{venta.cliente}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {venta.articulos} articulos
-                          </p>
-                        </div>
-                        <Badge variant={variantEstado(venta.estado)}>
-                          {venta.estado}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground">
-                          {venta.metodo}
-                        </p>
-                        <p className="text-sm font-bold">
-                          RD$ {venta.total.toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <div className={cn(adminView !== "ventas" && "hidden xl:block")}>
+                <SalesHistoryPanel
+                  sales={sales}
+                  onSelectSale={setSelectedSale}
+                />
+              </div>
             </div>
 
-            <Card className="xl:sticky xl:top-20 xl:max-h-[calc(100svh-6rem)]">
-              <CardHeader>
-                <CardTitle>Proceso de cobro</CardTitle>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-col gap-4">
-                <Input
-                  value={cliente}
-                  onChange={(event) => setCliente(event.target.value)}
-                  placeholder="Cliente o referencia"
-                />
-
-                <div className="flex-1 space-y-3 overflow-auto">
-                  {carrito.length === 0 ? (
-                    <div className="rounded-lg border border-dashed p-6 text-center">
-                      <ShoppingCart className="mx-auto mb-2 size-8 text-muted-foreground" />
-                      <p className="text-sm font-medium">Carrito vacio</p>
-                      <p className="text-xs text-muted-foreground">
-                        Selecciona productos para registrar una venta.
-                      </p>
-                    </div>
-                  ) : (
-                    carrito.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-lg border bg-background p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {item.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              RD$ {item.price.toFixed(2)} x {item.quantity}
-                            </p>
-                          </div>
-                          <p className="text-sm font-bold">
-                            RD$ {(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="mt-3 flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={() => quitarDelCarrito(item.id)}
-                          >
-                            <Minus />
-                          </Button>
-                          <span className="w-6 text-center text-sm font-medium">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={() => agregarAlCarrito(item)}
-                          >
-                            <Plus />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: "Efectivo", icon: Banknote },
-                    { value: "Tarjeta", icon: CreditCard },
-                    { value: "Transferencia", icon: CheckCircle2 },
-                  ].map((item) => (
-                    <button
-                      key={item.value}
-                      onClick={() => setMetodoPago(item.value as MetodoPago)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-colors",
-                        metodoPago === item.value
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "bg-background hover:bg-muted"
-                      )}
-                    >
-                      <item.icon className="size-4" />
-                      {item.value}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-2 rounded-lg bg-muted p-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Producto clave
-                    </span>
-                    <span className="max-w-40 truncate">
-                      {productoMasVendido}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Articulos</span>
-                    <span>{articulos}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-base font-bold">
-                    <span>Total</span>
-                    <span>RD$ {total.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full"
-                  size="lg"
-                  disabled={carrito.length === 0}
-                  onClick={registrarVenta}
-                >
-                  <ReceiptText />
-                  Registrar venta
-                </Button>
-              </CardContent>
-            </Card>
+            <div
+              className={cn(
+                "order-1 xl:order-2",
+                adminView !== "cobro" && "hidden xl:block"
+              )}
+            >
+              <SaleCheckoutPanel
+                cart={cart}
+                customer={customer}
+                paymentMethod={paymentMethod}
+                productHint={productHint}
+                total={total}
+                itemCount={itemCount}
+                onCustomerChange={setCustomer}
+                onPaymentMethodChange={setPaymentMethod}
+                onAdd={addToCart}
+                onRemoveOne={removeOne}
+                onRegister={registerSale}
+                onFindProducts={() => setAdminView("productos")}
+              />
+            </div>
           </div>
         </div>
+
+        <AdminMobileTabs value={adminView} onChange={setAdminView} />
+        <SaleDetailSheet
+          sale={selectedSale}
+          open={selectedSale !== null}
+          onOpenChange={(open) => {
+            if (!open) setSelectedSale(null)
+          }}
+        />
       </SidebarInset>
     </SidebarProvider>
-  )
-}
-
-function ResumenCard({
-  titulo,
-  valor,
-  detalle,
-  icono: Icono,
-}: {
-  titulo: string
-  valor: string
-  detalle: string
-  icono: ComponentType<{ className?: string }>
-}) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-sm">{titulo}</CardTitle>
-        <Icono className="size-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold">{valor}</p>
-        <p className="text-xs text-muted-foreground">{detalle}</p>
-      </CardContent>
-    </Card>
   )
 }

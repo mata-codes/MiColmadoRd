@@ -1,349 +1,239 @@
+import { useMemo, useState } from "react"
+import { Crown, Search, ShoppingCart } from "lucide-react"
+
+import { MobileBottomNav } from "@/components/navigation/MobileBottomNav"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { Badge } from "@/components/ui/badge"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-} from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
-import { useProducts, ProductCard } from "@/features/products"
-import type { Product } from "@/features/products"
-import { cn } from "@/lib/utils"
+import { APP_CONFIG } from "@/config/app"
 import {
-  CheckCircle2,
-  CreditCard,
-  Minus,
-  Plus,
-  Search,
-  ShoppingCart,
-  Trash2,
-} from "lucide-react"
-import { useMemo, useState } from "react"
+  CartDrawer,
+  CartSummary,
+  ProductCard,
+  ProductDetailSheet,
+  ProductFilters,
+  useCart,
+  useProducts,
+  type Product,
+  type SortOption,
+} from "@/features/products"
+import { ProPlansModal } from "@/features/subscriptions"
+import {
+  ALL_CATEGORIES_LABEL,
+  getCategoryOptions,
+  matchesCategory,
+  normalizeCatalogText,
+} from "@/lib/catalog"
 
-type CartItem = Product & {
-  quantity: number
+export default function ShopPage() {
+  return (
+    <SidebarProvider>
+      <AppSidebar mode="public" />
+      <ShopContent />
+    </SidebarProvider>
+  )
 }
 
-export default function Page() {
+function ShopContent() {
+  const { setOpenMobile } = useSidebar()
   const { products } = useProducts()
-  const [cart, setCart] = useState<CartItem[]>([])
+  const cart = useCart()
+  const [cartOpen, setCartOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("Todos")
+  const [category, setCategory] = useState(ALL_CATEGORIES_LABEL)
+  const [sort, setSort] = useState<SortOption>("featured")
+  const [onlyOffers, setOnlyOffers] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("Tarjeta")
-  const [paid, setPaid] = useState(false)
 
-  const categories = useMemo(() => {
-    return ["Todos", ...new Set(products.map((product) => product.category))]
-  }, [products])
+  const categories = useMemo(() => getCategoryOptions(products), [products])
 
-  const filteredProducts = products.filter((product) => {
-    const searchText = `${product.name} ${product.brand}`.toLowerCase()
-    const matchSearch = searchText.includes(search.toLowerCase())
-    const matchCategory = category === "Todos" || product.category === category
-
-    return matchSearch && matchCategory
-  })
-
-  const subtotal = cart.reduce((sum, item) => {
-    const price = item.discountPrice ?? item.price
-    return sum + price * item.quantity
-  }, 0)
-  const envio = subtotal > 0 ? 75 : 0
-  const total = subtotal + envio
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
-
-  const addToCart = (product: Product) => {
-    setPaid(false)
-    setCart((prev) => {
-      const current = prev.find((item) => item.id === product.id)
-
-      if (current) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: Math.min(item.quantity + 1, item.stock) }
-            : item
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter((product) => {
+        const searchText = normalizeCatalogText(
+          `${product.name} ${product.brand} ${product.category}`
         )
-      }
+        const matchSearch = searchText.includes(normalizeCatalogText(search))
+        const matchCategory = matchesCategory(category, product.category)
+        const matchOffer = !onlyOffers || product.discountPrice !== undefined
 
-      return [...prev, { ...product, quantity: 1 }]
-    })
-  }
+        return matchSearch && matchCategory && matchOffer
+      })
+      .sort((a, b) => {
+        if (sort === "price-asc") {
+          return (a.discountPrice ?? a.price) - (b.discountPrice ?? b.price)
+        }
 
-  const removeOne = (id: number) => {
-    setCart((prev) => {
-      const current = prev.find((item) => item.id === id)
+        if (sort === "price-desc") {
+          return (b.discountPrice ?? b.price) - (a.discountPrice ?? a.price)
+        }
 
-      if (current && current.quantity > 1) {
-        return prev.map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
-        )
-      }
+        if (sort === "stock") {
+          return b.stock - a.stock
+        }
 
-      return prev.filter((item) => item.id !== id)
-    })
-  }
+        return Number(b.featured) - Number(a.featured)
+      })
+  }, [category, onlyOffers, products, search, sort])
 
-  const removeItem = (id: number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id))
-  }
-
-  const checkout = () => {
-    setPaid(true)
-    setCart([])
-  }
-
-  const CartResume = () => (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between border-b p-4">
-        <div>
-          <h2 className="font-semibold">Carrito</h2>
-          <p className="text-xs text-muted-foreground">
-            {cartCount} producto{cartCount === 1 ? "" : "s"} seleccionado
-            {cartCount === 1 ? "" : "s"}
-          </p>
-        </div>
-        <Badge variant="secondary">RD$ {total.toFixed(2)}</Badge>
-      </div>
-
-      <div className="flex-1 overflow-auto p-4">
-        {paid ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-            <CheckCircle2 className="size-10 text-primary" />
-            <p className="font-medium">Pago registrado</p>
-            <p className="text-sm text-muted-foreground">
-              La orden fue procesada.
-            </p>
-          </div>
-        ) : cart.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-            <ShoppingCart className="size-10 text-muted-foreground" />
-            <p className="font-medium">Tu carrito esta vacio</p>
-            <p className="text-sm text-muted-foreground">
-              Agrega productos para preparar la compra.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {cart.map((item) => {
-              const price = item.discountPrice ?? item.price
-
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-lg border bg-background p-3"
-                >
-                  <div className="flex gap-3">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="size-14 rounded-md object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {item.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        RD$ {price.toFixed(2)} x {item.quantity}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold">
-                        RD$ {(price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Stock: {item.stock}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => removeOne(item.id)}
-                      >
-                        <Minus />
-                      </Button>
-                      <span className="w-6 text-center text-sm font-medium">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        disabled={item.quantity >= item.stock}
-                        onClick={() => addToCart(item)}
-                      >
-                        <Plus />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="border-t p-4">
-        <div className="mb-3 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>RD$ {subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Delivery</span>
-            <span>RD$ {envio.toFixed(2)}</span>
-          </div>
-          <Separator />
-          <div className="flex justify-between text-base font-bold">
-            <span>Total</span>
-            <span>RD$ {total.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div className="mb-3 grid grid-cols-3 gap-2">
-          {["Tarjeta", "Efectivo", "Transferencia"].map((method) => (
-            <button
-              key={method}
-              onClick={() => setPaymentMethod(method)}
-              className={cn(
-                "rounded-lg border px-2 py-2 text-xs transition-colors",
-                paymentMethod === method
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-background hover:bg-muted"
-              )}
-            >
-              {method}
-            </button>
-          ))}
-        </div>
-
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={cart.length === 0}
-          onClick={checkout}
-        >
-          <CreditCard />
-          Pagar con {paymentMethod}
-        </Button>
-      </div>
-    </div>
+  const cartSummary = (
+    <CartSummary
+      cart={cart.items}
+      paid={cart.paid}
+      paymentMethod={paymentMethod}
+      onPaymentMethodChange={setPaymentMethod}
+      onAdd={(product) => cart.add(product)}
+      onRemoveOne={cart.removeOne}
+      onRemove={cart.remove}
+      onCheckout={cart.checkout}
+    />
   )
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="sticky top-0 z-20 flex min-h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur">
+    <SidebarInset>
+      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+        <div className="flex min-h-16 items-center justify-between gap-2 px-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger className="-ml-1" aria-label="Abrir menu" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="hidden data-[orientation=vertical]:h-4 sm:block"
             />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Tienda</BreadcrumbLink>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {APP_CONFIG.name}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                Tienda móvil
+              </p>
+            </div>
           </div>
-          <div className="relative hidden w-full max-w-sm md:block">
-            <Search className="absolute top-2 left-2 size-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar productos..."
-              className="pl-8"
-            />
-          </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="md:hidden">
-                <ShoppingCart />
-                {cartCount}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[88svh] p-0">
-              <SheetHeader className="sr-only">
-                <SheetTitle>Carrito</SheetTitle>
-              </SheetHeader>
-              <CartResume />
-              <SheetFooter className="sr-only" />
-            </SheetContent>
-          </Sheet>
-        </header>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-          <main className="flex-1 overflow-auto p-4">
-            <div className="mb-4 space-y-3">
-              <div className="relative md:hidden">
-                <Search className="absolute top-2 left-2 size-4 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar productos..."
-                  className="pl-8"
+          <CartDrawer
+            count={cart.totals.count}
+            open={cartOpen}
+            onOpenChange={setCartOpen}
+          >
+            {cartSummary}
+          </CartDrawer>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <main className="min-w-0 flex-1 overflow-auto p-3 pb-24 sm:p-4 lg:pb-4">
+          <section className="mb-4 grid gap-3 rounded-lg border bg-card p-4 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <Badge variant="secondary" className="mb-3">
+                Compra rápida
+              </Badge>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Todo para tu colmado, a mano
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Busca, filtra, revisa detalles y arma tu carrito desde el
+                celular sin perder tiempo.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 md:w-72 md:grid-cols-1">
+              <ProPlansModal
+                trigger={
+                  <Button variant="outline" className="h-10">
+                    <Crown />
+                    Planes Pro
+                  </Button>
+                }
+              />
+              <Button className="h-10" onClick={() => setCartOpen(true)}>
+                <ShoppingCart />
+                RD$ {cart.totals.total.toFixed(2)}
+              </Button>
+            </div>
+          </section>
+
+          <div className="sticky top-[4.5rem] z-10 mb-4 space-y-3 bg-background/95 py-2 backdrop-blur">
+            <div className="relative md:hidden">
+              <Search className="absolute top-3 left-3 size-4 text-muted-foreground" />
+              <div className="[&_input]:pl-9">
+                <ProductFilters
+                  search={search}
+                  onSearchChange={setSearch}
+                  categories={categories}
+                  category={category}
+                  onCategoryChange={setCategory}
+                  sort={sort}
+                  onSortChange={setSort}
+                  onlyOffers={onlyOffers}
+                  onOnlyOffersChange={setOnlyOffers}
                 />
               </div>
-
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {categories.map((item) => (
-                  <Button
-                    key={item}
-                    variant={category === item ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCategory(item)}
-                  >
-                    {item}
-                  </Button>
-                ))}
-              </div>
             </div>
+            <div className="hidden md:block">
+              <ProductFilters
+                search={search}
+                onSearchChange={setSearch}
+                categories={categories}
+                category={category}
+                onCategoryChange={setCategory}
+                sort={sort}
+                onSortChange={setSort}
+                onlyOffers={onlyOffers}
+                onOnlyOffersChange={setOnlyOffers}
+              />
+            </div>
+          </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   quantity={
-                    cart.find((item) => item.id === product.id)?.quantity ?? 0
+                    cart.items.find((item) => item.id === product.id)
+                      ?.quantity ?? 0
                   }
-                  onAddToCart={addToCart}
+                  onAddToCart={(item) => cart.add(item)}
+                  onViewDetails={setSelectedProduct}
                 />
               ))}
             </div>
-          </main>
+          ) : (
+            <div className="rounded-lg border border-dashed p-8 text-center">
+              <p className="font-medium">No encontramos productos</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Prueba con otra búsqueda o cambia los filtros.
+              </p>
+            </div>
+          )}
+        </main>
 
-          <aside className="hidden w-96 border-l bg-card lg:block">
-            <CartResume />
-          </aside>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        <aside className="hidden w-96 border-l bg-card lg:block">
+          {cartSummary}
+        </aside>
+      </div>
+
+      <MobileBottomNav
+        cartCount={cart.totals.count}
+        onMenu={() => setOpenMobile(true)}
+        onCart={() => setCartOpen(true)}
+      />
+
+      <ProductDetailSheet
+        product={selectedProduct}
+        open={selectedProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedProduct(null)
+        }}
+        onAddToCart={cart.add}
+      />
+    </SidebarInset>
   )
 }
